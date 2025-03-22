@@ -16,7 +16,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'
+          cache: 'npm'  # Caches node_modules to speed up builds
 
       - name: Install Dependencies
         run: npm install
@@ -25,25 +25,14 @@ jobs:
         run: npm run build
 
       - name: Archive Build Artifacts
-        run: |
-          echo "Creating tar archive..."
-          tar -czf build.tar.gz build/
-          ls -lh build.tar.gz  # Show file size
-          file build.tar.gz  # Confirm it's a tar archive
-          tar -tzf build.tar.gz || (echo "❌ Tar file is corrupt before upload!"; exit 1)
-          echo "Archive verification complete!"
+        run: tar -czf build.tar.gz build/
 
       - name: Upload Build to JFrog Artifactory
         run: |
           set -e
-          echo "Uploading build.tar.gz to JFrog..."
-          
-          curl -v -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
+          echo "Uploading build.tar.gz to JFrog Artifactory..."
+          curl -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                -T build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
-
-          echo "Verifying uploaded file..."
-          curl -I "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
-          
           echo "Upload complete!"
 
   deploy:
@@ -57,11 +46,11 @@ jobs:
           
           # Remove any existing file to avoid issues
           rm -f build.tar.gz
-          
-          # Add `-L` to follow JFrog's redirect to S3
+
+          # Use `-L` to follow redirects and ensure a full download
           curl -L -v -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                -o build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
-
+          
           echo "Checking downloaded file..."
           ls -lh build.tar.gz  # Show file size
           file build.tar.gz  # Check file type
@@ -74,7 +63,9 @@ jobs:
           echo "Checking tar integrity..."
           tar -tzf build.tar.gz || (echo "❌ ERROR: Tar file is corrupt!"; exit 1)
 
-          echo "Download & verification complete!"
+          echo "Extracting build..."
+          tar -xzf build.tar.gz
+          echo "Download & extraction complete!"
 
       - name: Authenticate with GCP
         uses: google-github-actions/auth@v2
@@ -85,7 +76,7 @@ jobs:
         run: |
           set -e
           echo "Uploading build to GCS..."
-          gsutil -m rsync -r build/ gs://${{ secrets.GCS_BUCKET_NAME }}/
+          gsutil -m rsync -r ./build gs://${{ secrets.GCS_BUCKET_NAME }}
           echo "Upload complete!"
 
       - name: Set Public Permissions (Optional)
