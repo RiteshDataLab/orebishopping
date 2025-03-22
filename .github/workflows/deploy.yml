@@ -35,7 +35,7 @@ jobs:
         run: |
           set -e
           echo "Uploading build.tar.gz to JFrog Artifactory..."
-          curl --fail -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
+          curl --retry 3 --fail -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                -T build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
           echo "Upload complete!"
 
@@ -47,16 +47,20 @@ jobs:
         run: |
           set -e
           echo "Downloading build.tar.gz from JFrog Artifactory..."
-          curl --fail -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
+          
+          # Retry 3 times in case of failure
+          curl --retry 3 --fail -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                -o build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
 
-          ls -lh build.tar.gz  # Check if file is downloaded and non-zero
-
-          if [ -s build.tar.gz ]; then
-            echo "File exists and is not empty, extracting..."
+          # Validate download
+          ls -lh build.tar.gz  # Check if file exists and size is non-zero
+          
+          # Verify file integrity before extraction
+          if tar -tzf build.tar.gz >/dev/null 2>&1; then
+            echo "File is valid, extracting..."
             tar -xzf build.tar.gz
           else
-            echo "Download failed or file is empty!"
+            echo "Error: Corrupt archive! Exiting..."
             exit 1
           fi
 
