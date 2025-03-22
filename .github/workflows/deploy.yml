@@ -33,7 +33,17 @@ jobs:
           echo "Uploading build.tar.gz to JFrog..."
           curl -v -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                -T build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
-          echo "Upload complete!"
+
+          # Verify upload success
+          response=$(curl -Is -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
+               "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz" | head -n 1)
+          
+          if [[ $response == *"200 OK"* ]]; then
+            echo "Upload verified successfully!"
+          else
+            echo "Upload failed! File may not exist."
+            exit 1
+          fi
 
   deploy:
     needs: build
