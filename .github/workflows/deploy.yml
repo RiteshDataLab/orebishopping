@@ -65,4 +65,4 @@ jobs:
           set -e
           echo "Making GCS bucket publicly accessible..."
           gsutil iam ch allUsers:objectViewer gs://${{ secrets.GCS_BUCKET_NAME }}
-          echo "Public access granted!".
+          echo "Public access granted!"
