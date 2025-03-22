@@ -100,7 +100,7 @@ jobs:
           ls -lah build/
 
           # Fix: Ensure correct destination bucket syntax
-          gsutil -m cp -r build/* gs://${{ secrets.GCS_BUCKET_NAME }}
+          gsutil -m cp -r build/* gs://${{ secrets.GCS_BUCKET_NAME }}/
 
           echo "✅ Upload to GCS complete!"
 
