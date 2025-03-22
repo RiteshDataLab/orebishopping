@@ -28,15 +28,11 @@ jobs:
         run: tar -czf build.tar.gz build/
 
       - name: Upload Build to JFrog Artifactory
-        env:
-          JFROG_USERNAME: ${{ secrets.JFROG_USERNAME }}
-          JFROG_PASSWORD: ${{ secrets.JFROG_PASSWORD }}
-          JFROG_URL: ${{ secrets.JFROG_URL }}  # Ensure this includes `/artifactory`
-          JFROG_REPO: ${{ secrets.JFROG_REPO }}
         run: |
           set -e
           echo "Uploading build.tar.gz to JFrog Artifactory..."
-          curl -u "$JFROG_USERNAME:$JFROG_PASSWORD" -T build.tar.gz "$JFROG_URL/api/generic/$JFROG_REPO/build.tar.gz"
+          curl -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
+               -T build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
           echo "Upload complete!"
 
   deploy:
@@ -44,15 +40,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download Build from JFrog
-        env:
-          JFROG_USERNAME: ${{ secrets.JFROG_USERNAME }}
-          JFROG_PASSWORD: ${{ secrets.JFROG_PASSWORD }}
-          JFROG_URL: ${{ secrets.JFROG_URL }}
-          JFROG_REPO: ${{ secrets.JFROG_REPO }}
         run: |
           set -e
           echo "Downloading build.tar.gz from JFrog Artifactory..."
-          curl -u "$JFROG_USERNAME:$JFROG_PASSWORD" -o build.tar.gz "$JFROG_URL/api/generic/$JFROG_REPO/build.tar.gz"
+          curl -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
+               -o build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
           tar -xzf build.tar.gz
           echo "Download & extraction complete!"
 
