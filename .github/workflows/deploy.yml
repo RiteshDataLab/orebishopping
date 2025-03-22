@@ -1,40 +1,43 @@
 name: Deploy React App to GCS via JFrog
- 
+
 on:
   push:
     branches:
-      - master  # Change if using a different branch
- 
+      - master
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
- 
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'  # Caches node_modules to speed up builds
- 
+          cache: 'npm'
+
       - name: Install Dependencies
         run: npm install
- 
+
       - name: Build React App
         run: npm run build
- 
+
       - name: Archive Build Artifacts
         run: tar -czf build.tar.gz build/
- 
+
       - name: Upload Build to JFrog Artifactory
         run: |
           set -e
           echo "Uploading build.tar.gz to JFrog Artifactory..."
           curl -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                -T build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
+          echo "Verifying upload..."
+          curl -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
+               -I "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
           echo "Upload complete!"
- 
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -45,21 +48,37 @@ jobs:
           echo "Downloading build.tar.gz from JFrog Artifactory..."
           curl -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                -o build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
-          tar -xzf build.tar.gz
-          echo "Download & extraction complete!"
- 
+          
+          echo "Checking file integrity..."
+          ls -lh build.tar.gz  # Show file size
+          file build.tar.gz  # Check file type
+          tar -tzf build.tar.gz || echo "Tar file is corrupt or empty!"
+          
+          echo "Download complete!"
+
+      - name: Extract Build Artifacts
+        run: |
+          set -e
+          if [ -s build.tar.gz ]; then
+            echo "Extracting build.tar.gz..."
+            tar -xzf build.tar.gz || (echo "Extraction failed!"; exit 1)
+          else
+            echo "Error: build.tar.gz is empty or corrupt!"
+            exit 1
+          fi
+
       - name: Authenticate with GCP
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
- 
+
       - name: Upload to Google Cloud Storage (GCS)
         run: |
           set -e
           echo "Uploading build to GCS..."
           gsutil -m rsync -r build/ gs://${{ secrets.GCS_BUCKET_NAME }}/
           echo "Upload complete!"
- 
+
       - name: Set Public Permissions (Optional)
         run: |
           set -e
