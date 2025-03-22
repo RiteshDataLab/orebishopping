@@ -3,7 +3,7 @@ name: Deploy React App to GCS via JFrog
 on:
   push:
     branches:
-      - master  # Change if using a different branch
+      - master
 
 jobs:
   build:
@@ -30,8 +30,8 @@ jobs:
       - name: Upload Build to JFrog Artifactory
         run: |
           set -e
-          echo "Uploading build.tar.gz to JFrog Artifactory..."
-          curl -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
+          echo "Uploading build.tar.gz to JFrog..."
+          curl -v -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                -T build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
           echo "Upload complete!"
 
@@ -39,22 +39,29 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Debug JFrog Connection
+        run: |
+          echo "Checking if JFrog URL is reachable..."
+          curl -Is "https://trialvape97.jfrog.io/artifactory/" | head -n 1
+
       - name: Download Build from JFrog
         run: |
           set -e
           echo "Downloading build.tar.gz from JFrog Artifactory..."
-          
-          # Retry 3 times if the download fails
+
           for i in {1..3}; do
-            curl --fail -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
+            curl -v --fail -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                  -o build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz" && break
             echo "Retrying download ($i/3)..."
             sleep 5
           done
 
+          # Debugging: Show file details
+          ls -lh build.tar.gz || echo "File does not exist!"
+          
           # Check if the file exists and is not empty
           if [ ! -s build.tar.gz ]; then
-            echo "Error: Downloaded file is empty!"
+            echo "Error: Downloaded file is empty! Authentication may have failed."
             exit 1
           fi
 
