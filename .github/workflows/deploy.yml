@@ -124,10 +124,3 @@ jobs:
           gsutil -m cp -r build/* gs://my-react-app-bucket-jfrog/
 
           echo "✅ Upload to GCS complete!"
-
-      - name: Set Public Permissions (Optional)
-        run: |
-          set -e
-          echo "Making GCS bucket publicly accessible..."
-          gsutil iam ch allUsers:objectViewer gs://my-react-app-bucket-jfrog
-          echo "✅ Public access granted!"
