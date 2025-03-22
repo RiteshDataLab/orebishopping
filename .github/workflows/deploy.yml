@@ -28,10 +28,13 @@ jobs:
         run: |
           echo "Creating tar archive..."
           tar -czf build.tar.gz build/
+          
+          echo "Verifying archive..."
           ls -lh build.tar.gz  # Show file size
           file build.tar.gz  # Confirm it's a tar archive
-          tar -tzf build.tar.gz || (echo "❌ Tar file is corrupt before upload!"; exit 1)
-          echo "Archive verification complete!"
+          tar -tzf build.tar.gz || (echo "❌ ERROR: Tar file is corrupt before upload!"; exit 1)
+          
+          echo "✅ Archive verification complete!"
 
       - name: Upload Build to JFrog Artifactory
         run: |
@@ -44,7 +47,7 @@ jobs:
           echo "Verifying uploaded file..."
           curl -I "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
           
-          echo "Upload complete!"
+          echo "✅ Upload complete!"
 
   deploy:
     needs: build
@@ -74,7 +77,7 @@ jobs:
           echo "Checking tar integrity..."
           tar -tzf build.tar.gz || (echo "❌ ERROR: Tar file is corrupt!"; exit 1)
 
-          echo "Download & verification complete!"
+          echo "✅ Download & verification complete!"
 
       - name: Authenticate with GCP
         uses: google-github-actions/auth@v2
@@ -85,12 +88,25 @@ jobs:
         run: |
           set -e
           echo "Uploading build to GCS..."
-          gsutil -m rsync -r build/ gs://${{ secrets.GCS_BUCKET_NAME }}/
-          echo "Upload complete!"
+          
+          # Debugging: Print GCP authentication details
+          echo "Debug: Checking GCP authentication details..."
+          echo "GOOGLE_APPLICATION_CREDENTIALS: $GOOGLE_APPLICATION_CREDENTIALS"
+          echo "CLOUDSDK_CORE_PROJECT: $CLOUDSDK_CORE_PROJECT"
+
+          # Ensure `build/` exists
+          echo "Debug: Checking build directory contents before upload..."
+          mkdir -p build  # Ensure build directory exists
+          ls -lah build/
+
+          # Upload using `cp` instead of `rsync` to avoid argument errors
+          gsutil -m cp -r build/* gs://${{ secrets.GCS_BUCKET_NAME }}/
+
+          echo "✅ Upload to GCS complete!"
 
       - name: Set Public Permissions (Optional)
         run: |
           set -e
           echo "Making GCS bucket publicly accessible..."
           gsutil iam ch allUsers:objectViewer gs://${{ secrets.GCS_BUCKET_NAME }}
-          echo "Public access granted!"
+          echo "✅ Public access granted!"
