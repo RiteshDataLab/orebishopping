@@ -94,13 +94,18 @@ jobs:
           echo "GOOGLE_APPLICATION_CREDENTIALS: $GOOGLE_APPLICATION_CREDENTIALS"
           echo "CLOUDSDK_CORE_PROJECT: $CLOUDSDK_CORE_PROJECT"
 
-          # Ensure `build/` exists
+          # Ensure `build/` exists and contains files
           echo "Debug: Checking build directory contents before upload..."
           mkdir -p build  # Ensure build directory exists
           ls -lah build/
 
-          # Fix: Ensure correct destination bucket syntax
-          gsutil -m cp -r build/* gs://${{ secrets.GCS_BUCKET_NAME }}/
+          if [ -z "$(ls -A build/)" ]; then
+            echo "❌ ERROR: build/ directory is empty! Exiting."
+            exit 1
+          fi
+
+          # Fix: Use correct bucket name
+          gsutil -m cp -r build/* gs://my-react-app-bucket-jfrog/
 
           echo "✅ Upload to GCS complete!"
 
@@ -108,5 +113,5 @@ jobs:
         run: |
           set -e
           echo "Making GCS bucket publicly accessible..."
-          gsutil iam ch allUsers:objectViewer gs://${{ secrets.GCS_BUCKET_NAME }}
+          gsutil iam ch allUsers:objectViewer gs://my-react-app-bucket-jfrog/
           echo "✅ Public access granted!"
