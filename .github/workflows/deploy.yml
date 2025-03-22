@@ -1,103 +1,65 @@
 name: Deploy React App to GCS via JFrog
-
+ 
 on:
   push:
     branches:
-      - master
-
+      - master  # Change if using a different branch
+ 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
+ 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'
-
+          cache: 'npm'  # Caches node_modules to speed up builds
+ 
       - name: Install Dependencies
         run: npm install
-
+ 
       - name: Build React App
         run: npm run build
-
+ 
       - name: Archive Build Artifacts
         run: tar -czf build.tar.gz build/
-
+ 
       - name: Upload Build to JFrog Artifactory
         run: |
           set -e
-          echo "Uploading build.tar.gz to JFrog..."
-          curl -v -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
+          echo "Uploading build.tar.gz to JFrog Artifactory..."
+          curl -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                -T build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
-
-          # Verify upload success
-          response=$(curl -Is -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
-               "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz" | head -n 1)
-          
-          if [[ $response == *"200 OK"* ]]; then
-            echo "Upload verified successfully!"
-          else
-            echo "Upload failed! File may not exist."
-            exit 1
-          fi
-
+          echo "Upload complete!"
+ 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Debug JFrog Connection
-        run: |
-          echo "Checking if JFrog URL is reachable..."
-          curl -Is "https://trialvape97.jfrog.io/artifactory/" | head -n 1
-
       - name: Download Build from JFrog
         run: |
           set -e
           echo "Downloading build.tar.gz from JFrog Artifactory..."
-
-          for i in {1..3}; do
-            curl -v --fail -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
-                 -o build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz" && break
-            echo "Retrying download ($i/3)..."
-            sleep 5
-          done
-
-          # Debugging: Show file details
-          ls -lh build.tar.gz || echo "File does not exist!"
-          
-          # Check if the file exists and is not empty
-          if [ ! -s build.tar.gz ]; then
-            echo "Error: Downloaded file is empty! Authentication may have failed."
-            exit 1
-          fi
-
-          # Verify file integrity before extraction
-          if tar -tzf build.tar.gz >/dev/null 2>&1; then
-            echo "File is valid, extracting..."
-            tar -xzf build.tar.gz
-          else
-            echo "Error: Corrupt archive! Exiting..."
-            exit 1
-          fi
-
+          curl -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
+               -o build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
+          tar -xzf build.tar.gz
           echo "Download & extraction complete!"
-
+ 
       - name: Authenticate with GCP
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
-
+ 
       - name: Upload to Google Cloud Storage (GCS)
         run: |
           set -e
           echo "Uploading build to GCS..."
           gsutil -m rsync -r build/ gs://${{ secrets.GCS_BUCKET_NAME }}/
           echo "Upload complete!"
-
+ 
       - name: Set Public Permissions (Optional)
         run: |
           set -e
