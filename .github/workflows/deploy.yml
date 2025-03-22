@@ -33,7 +33,7 @@ jobs:
           JFROG_URL: ${{ secrets.JFROG_URL }}
           JFROG_REPO: ${{ secrets.JFROG_REPO }}
         run: |
-          curl -u "$JFROG_USERNAME:$JFROG_PASSWORD" -T build.tar.gz "$JFROG_URL/api/generic/$JFROG_REPO/build.tar.gz"
+          curl -u "$JFROG_USERNAME:$JFROG_PASSWORD" -T build.tar.gz "$JFROG_URL/artifactory/$JFROG_REPO/build.tar.gz"
 
   deploy:
     needs: build
@@ -46,7 +46,7 @@ jobs:
           JFROG_URL: ${{ secrets.JFROG_URL }}
           JFROG_REPO: ${{ secrets.JFROG_REPO }}
         run: |
-          curl -u "$JFROG_USERNAME:$JFROG_PASSWORD" -o build.tar.gz "$JFROG_URL/api/generic/$JFROG_REPO/build.tar.gz"
+          curl -u "$JFROG_USERNAME:$JFROG_PASSWORD" -o build.tar.gz "$JFROG_URL/artifactory/$JFROG_REPO/build.tar.gz"
           tar -xzf build.tar.gz
 
       - name: Authenticate with GCP
