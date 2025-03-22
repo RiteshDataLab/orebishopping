@@ -58,7 +58,8 @@ jobs:
           # Remove any existing file to avoid issues
           rm -f build.tar.gz
           
-          curl -v -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
+          # Add `-L` to follow JFrog's redirect to S3
+          curl -L -v -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                -o build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
 
           echo "Checking downloaded file..."
