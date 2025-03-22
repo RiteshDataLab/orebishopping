@@ -27,11 +27,15 @@ jobs:
       - name: Archive Build Artifacts
         run: tar -czf build.tar.gz build/
 
+      - name: Verify Archive
+        run: |
+          ls -lh build.tar.gz  # Check if archive exists and size is non-zero
+
       - name: Upload Build to JFrog Artifactory
         run: |
           set -e
           echo "Uploading build.tar.gz to JFrog Artifactory..."
-          curl -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
+          curl --fail -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                -T build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
           echo "Upload complete!"
 
@@ -43,9 +47,19 @@ jobs:
         run: |
           set -e
           echo "Downloading build.tar.gz from JFrog Artifactory..."
-          curl -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
+          curl --fail -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                -o build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
-          tar -xzf build.tar.gz
+
+          ls -lh build.tar.gz  # Check if file is downloaded and non-zero
+
+          if [ -s build.tar.gz ]; then
+            echo "File exists and is not empty, extracting..."
+            tar -xzf build.tar.gz
+          else
+            echo "Download failed or file is empty!"
+            exit 1
+          fi
+
           echo "Download & extraction complete!"
 
       - name: Authenticate with GCP
