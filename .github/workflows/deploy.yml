@@ -3,7 +3,7 @@ name: Deploy React App to GCS via JFrog
 on:
   push:
     branches:
-      - master
+      - master  # Change if using a different branch
 
 jobs:
   build:
@@ -28,20 +28,25 @@ jobs:
         run: |
           echo "Creating tar archive..."
           tar -czf build.tar.gz build/
+          
           echo "Verifying archive..."
           ls -lh build.tar.gz  # Show file size
           file build.tar.gz  # Confirm it's a tar archive
           tar -tzf build.tar.gz || (echo "❌ ERROR: Tar file is corrupt before upload!"; exit 1)
+          
           echo "✅ Archive verification complete!"
 
       - name: Upload Build to JFrog Artifactory
         run: |
           set -e
           echo "Uploading build.tar.gz to JFrog..."
-          curl -v -u "${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }}" \
+          
+          curl -v -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                -T build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
+
           echo "Verifying uploaded file..."
           curl -I "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
+          
           echo "✅ Upload complete!"
 
   deploy:
@@ -52,31 +57,43 @@ jobs:
         run: |
           set -e
           echo "Downloading build.tar.gz from JFrog..."
+          
+          # Remove any existing file to avoid issues
           rm -f build.tar.gz
-          curl -L -v -u "${{ secrets.JFROG_USERNAME }}:${{ secrets.JFROG_PASSWORD }}" \
+          
+          # Add -L to follow JFrog's redirect to S3
+          curl -L -v -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                -o build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
+
           echo "Checking downloaded file..."
           ls -lh build.tar.gz  # Show file size
           file build.tar.gz  # Check file type
+
           if [ ! -s build.tar.gz ]; then
             echo "❌ ERROR: build.tar.gz is empty or corrupt!"
             exit 1
           fi
+
           echo "Checking tar integrity..."
           tar -tzf build.tar.gz || (echo "❌ ERROR: Tar file is corrupt!"; exit 1)
+
           echo "✅ Download & verification complete!"
 
       - name: Extract Build Files
         run: |
           set -e
           echo "Extracting build files..."
+          
           tar -xzf build.tar.gz || (echo "❌ ERROR: Failed to extract build.tar.gz!"; exit 1)
+
           echo "Checking extracted build directory..."
           ls -lah build/
+
           if [ -z "$(ls -A build/)" ]; then
             echo "❌ ERROR: Extracted build directory is empty! Exiting."
             exit 1
           fi
+
           echo "✅ Extraction successful!"
 
       - name: Authenticate with GCP
@@ -88,16 +105,24 @@ jobs:
         run: |
           set -e
           echo "Uploading build to GCS..."
+          
+          # Debugging: Print GCP authentication details
           echo "Debug: Checking GCP authentication details..."
           echo "GOOGLE_APPLICATION_CREDENTIALS: $GOOGLE_APPLICATION_CREDENTIALS"
           echo "CLOUDSDK_CORE_PROJECT: $CLOUDSDK_CORE_PROJECT"
+
+          # Ensure build/ exists and contains files
           echo "Debug: Checking build directory contents before upload..."
           ls -lah build/
+
           if [ -z "$(ls -A build/)" ]; then
             echo "❌ ERROR: build/ directory is empty! Exiting."
             exit 1
           fi
+
+          # Upload using correct bucket name
           gsutil -m cp -r build/* gs://my-react-app-bucket-jfrog/
+
           echo "✅ Upload to GCS complete!"
 
       - name: Set Public Permissions (Optional)
