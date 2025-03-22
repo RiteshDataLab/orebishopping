@@ -27,13 +27,19 @@ jobs:
       - name: Archive Build Artifacts
         run: tar -czf build.tar.gz build/
 
+      - name: Debug Tar File
+        run: |
+          echo "Checking tar file..."
+          ls -lah build.tar.gz
+          tar -tzf build.tar.gz || echo "⚠️ Tar file may be corrupt!"
+
       - name: Upload Build to JFrog Artifactory
         run: |
           set -e
-          echo "Uploading build.tar.gz to JFrog Artifactory..."
+          echo "Uploading build.tar.gz to JFrog..."
           curl -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                -T build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
-          echo "Upload complete!"
+          echo "✅ Upload complete!"
 
   deploy:
     needs: build
@@ -44,16 +50,15 @@ jobs:
           set -e
           echo "Downloading build.tar.gz from JFrog..."
           
-          # Remove any existing file to avoid issues
+          # Remove any existing file to avoid conflicts
           rm -f build.tar.gz
-
-          # Use -L to follow redirects and ensure a full download
-          curl -L -v -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
+          
+          curl -v -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                -o build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
           
           echo "Checking downloaded file..."
-          ls -lh build.tar.gz  # Show file size
-          file build.tar.gz  # Check file type
+          ls -lah build.tar.gz
+          file build.tar.gz
 
           if [ ! -s build.tar.gz ]; then
             echo "❌ ERROR: build.tar.gz is empty or corrupt!"
@@ -63,9 +68,13 @@ jobs:
           echo "Checking tar integrity..."
           tar -tzf build.tar.gz || (echo "❌ ERROR: Tar file is corrupt!"; exit 1)
 
-          echo "Extracting build..."
-          tar -xzf build.tar.gz
-          echo "Download & extraction complete!"
+          echo "✅ Download & verification complete!"
+
+      - name: Extract Build
+        run: |
+          echo "Extracting build.tar.gz..."
+          tar -xzf build.tar.gz || (echo "❌ Extraction failed!"; exit 1)
+          echo "✅ Extraction complete!"
 
       - name: Authenticate with GCP
         uses: google-github-actions/auth@v2
@@ -76,12 +85,18 @@ jobs:
         run: |
           set -e
           echo "Uploading build to GCS..."
-          gsutil -m rsync -r ./build gs://${{ secrets.GCS_BUCKET_NAME }}
-          echo "Upload complete!"
+
+          # Debug: Check if build folder exists before uploading
+          ls -lah build || (echo "❌ ERROR: Build directory is missing!"; exit 1)
+
+          # Upload the build folder to GCS
+          gsutil -m rsync -r ./build gs://${{ secrets.GCS_BUCKET_NAME }}/
+
+          echo "✅ Upload complete!"
 
       - name: Set Public Permissions (Optional)
         run: |
           set -e
           echo "Making GCS bucket publicly accessible..."
           gsutil iam ch allUsers:objectViewer gs://${{ secrets.GCS_BUCKET_NAME }}
-          echo "Public access granted!"
+          echo "✅ Public access granted!"
