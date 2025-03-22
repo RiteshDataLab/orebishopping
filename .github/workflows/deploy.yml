@@ -16,7 +16,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'
+          cache: 'npm'  # Caches node_modules to speed up builds
 
       - name: Install Dependencies
         run: npm install
@@ -30,7 +30,7 @@ jobs:
       - name: Upload Build to JFrog Artifactory
         run: |
           set -e
-          echo "Uploading build.tar.gz to JFrog..."
+          echo "Uploading build.tar.gz to JFrog Artifactory..."
           curl -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                -T build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
           echo "Upload complete!"
@@ -44,23 +44,25 @@ jobs:
           set -e
           echo "Downloading build.tar.gz from JFrog..."
           
-          # Remove existing file to avoid conflicts
+          # Remove any existing file to avoid issues
           rm -f build.tar.gz
-          
-          curl -v -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
-               -o build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
 
-          echo "Checking file integrity..."
+          # Use -L to follow redirects and ensure a full download
+          curl -L -v -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
+               -o build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
+          
+          echo "Checking downloaded file..."
           ls -lh build.tar.gz  # Show file size
           file build.tar.gz  # Check file type
-          
+
           if [ ! -s build.tar.gz ]; then
             echo "❌ ERROR: build.tar.gz is empty or corrupt!"
             exit 1
           fi
-          
+
+          echo "Checking tar integrity..."
           tar -tzf build.tar.gz || (echo "❌ ERROR: Tar file is corrupt!"; exit 1)
-          
+
           echo "Extracting build..."
           tar -xzf build.tar.gz
           echo "Download & extraction complete!"
@@ -74,18 +76,8 @@ jobs:
         run: |
           set -e
           echo "Uploading build to GCS..."
-          
-          # Debugging - List build directory
-          ls -lah ./build
-
-          # Ensure the folder exists before uploading
-          if [ -d "./build" ]; then
-            gsutil -m rsync -r ./build gs://${{ secrets.GCS_BUCKET_NAME }}/
-            echo "Upload complete!"
-          else
-            echo "❌ ERROR: ./build directory not found!"
-            exit 1
-          fi
+          gsutil -m rsync -r ./build gs://${{ secrets.GCS_BUCKET_NAME }}
+          echo "Upload complete!"
 
       - name: Set Public Permissions (Optional)
         run: |
