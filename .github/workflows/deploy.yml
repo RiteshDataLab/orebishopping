@@ -16,7 +16,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'  # Caches node_modules to speed up builds
+          cache: 'npm'
 
       - name: Install Dependencies
         run: npm install
@@ -25,21 +25,26 @@ jobs:
         run: npm run build
 
       - name: Archive Build Artifacts
-        run: tar -czf build.tar.gz build/
-
-      - name: Debug Tar File
         run: |
-          echo "Checking tar file..."
-          ls -lah build.tar.gz
-          tar -tzf build.tar.gz || echo "⚠️ Tar file may be corrupt!"
+          echo "Creating tar archive..."
+          tar -czf build.tar.gz build/
+          ls -lh build.tar.gz  # Show file size
+          file build.tar.gz  # Confirm it's a tar archive
+          tar -tzf build.tar.gz || (echo "❌ Tar file is corrupt before upload!"; exit 1)
+          echo "Archive verification complete!"
 
       - name: Upload Build to JFrog Artifactory
         run: |
           set -e
           echo "Uploading build.tar.gz to JFrog..."
-          curl -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
+          
+          curl -v -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                -T build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
-          echo "✅ Upload complete!"
+
+          echo "Verifying uploaded file..."
+          curl -I "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
+          
+          echo "Upload complete!"
 
   deploy:
     needs: build
@@ -50,15 +55,16 @@ jobs:
           set -e
           echo "Downloading build.tar.gz from JFrog..."
           
-          # Remove any existing file to avoid conflicts
+          # Remove any existing file to avoid issues
           rm -f build.tar.gz
           
-          curl -v -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
+          # Add `-L` to follow JFrog's redirect to S3
+          curl -L -v -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                -o build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
-          
+
           echo "Checking downloaded file..."
-          ls -lah build.tar.gz
-          file build.tar.gz
+          ls -lh build.tar.gz  # Show file size
+          file build.tar.gz  # Check file type
 
           if [ ! -s build.tar.gz ]; then
             echo "❌ ERROR: build.tar.gz is empty or corrupt!"
@@ -68,13 +74,7 @@ jobs:
           echo "Checking tar integrity..."
           tar -tzf build.tar.gz || (echo "❌ ERROR: Tar file is corrupt!"; exit 1)
 
-          echo "✅ Download & verification complete!"
-
-      - name: Extract Build
-        run: |
-          echo "Extracting build.tar.gz..."
-          tar -xzf build.tar.gz || (echo "❌ Extraction failed!"; exit 1)
-          echo "✅ Extraction complete!"
+          echo "Download & verification complete!"
 
       - name: Authenticate with GCP
         uses: google-github-actions/auth@v2
@@ -85,18 +85,12 @@ jobs:
         run: |
           set -e
           echo "Uploading build to GCS..."
-
-          # Debug: Check if build folder exists before uploading
-          ls -lah build || (echo "❌ ERROR: Build directory is missing!"; exit 1)
-
-          # Upload the build folder to GCS
-          gsutil -m rsync -r ./build gs://${{ secrets.GCS_BUCKET_NAME }}/
-
-          echo "✅ Upload complete!"
+          gsutil -m rsync -r build/ gs://${{ secrets.GCS_BUCKET_NAME }}/
+          echo "Upload complete!"
 
       - name: Set Public Permissions (Optional)
         run: |
           set -e
           echo "Making GCS bucket publicly accessible..."
           gsutil iam ch allUsers:objectViewer gs://${{ secrets.GCS_BUCKET_NAME }}
-          echo "✅ Public access granted!"
+          echo "Public access granted!"
