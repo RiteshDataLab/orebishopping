@@ -79,6 +79,23 @@ jobs:
 
           echo "✅ Download & verification complete!"
 
+      - name: Extract Build Files
+        run: |
+          set -e
+          echo "Extracting build files..."
+          
+          tar -xzf build.tar.gz || (echo "❌ ERROR: Failed to extract build.tar.gz!"; exit 1)
+
+          echo "Checking extracted build directory..."
+          ls -lah build/
+
+          if [ -z "$(ls -A build/)" ]; then
+            echo "❌ ERROR: Extracted build directory is empty! Exiting."
+            exit 1
+          fi
+
+          echo "✅ Extraction successful!"
+
       - name: Authenticate with GCP
         uses: google-github-actions/auth@v2
         with:
@@ -96,7 +113,6 @@ jobs:
 
           # Ensure `build/` exists and contains files
           echo "Debug: Checking build directory contents before upload..."
-          mkdir -p build  # Ensure build directory exists
           ls -lah build/
 
           if [ -z "$(ls -A build/)" ]; then
@@ -104,7 +120,7 @@ jobs:
             exit 1
           fi
 
-          # Fix: Use correct bucket name
+          # Upload using correct bucket name
           gsutil -m cp -r build/* gs://my-react-app-bucket-jfrog/
 
           echo "✅ Upload to GCS complete!"
@@ -113,5 +129,5 @@ jobs:
         run: |
           set -e
           echo "Making GCS bucket publicly accessible..."
-          gsutil iam ch allUsers:objectViewer gs://my-react-app-bucket-jfrog/
+          gsutil iam ch allUsers:objectViewer gs://my-react-app-bucket-jfrog
           echo "✅ Public access granted!"
