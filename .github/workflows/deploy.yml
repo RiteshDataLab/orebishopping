@@ -3,7 +3,7 @@ name: Deploy React App to GCS via JFrog
 on:
   push:
     branches:
-      - master
+      - master  # Change if using a different branch
 
 jobs:
   build:
@@ -16,7 +16,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'
+          cache: 'npm'  # Caches node_modules to speed up builds
 
       - name: Install Dependencies
         run: npm install
@@ -33,9 +33,9 @@ jobs:
           echo "Uploading build.tar.gz to JFrog Artifactory..."
           curl -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                -T build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
+
           echo "Verifying upload..."
-          curl -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
-               -I "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
+          curl -I "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
           echo "Upload complete!"
 
   deploy:
@@ -48,22 +48,30 @@ jobs:
           echo "Downloading build.tar.gz from JFrog Artifactory..."
           curl -u "ritesh.cyberlink@gmail.com:cmVmdGtuOjAxOjE3NzQxODgzMTc6TWczSWJ0YWxsUEV6dVBycEN5VjZEeFE3ZDg1" \
                -o build.tar.gz "https://trialvape97.jfrog.io/artifactory/my-react-app-repo-generic-local/build.tar.gz"
-          
+
           echo "Checking file integrity..."
           ls -lh build.tar.gz  # Show file size
           file build.tar.gz  # Check file type
-          tar -tzf build.tar.gz || echo "Tar file is corrupt or empty!"
-          
+
+          if [ ! -s build.tar.gz ]; then
+            echo "Error: build.tar.gz is empty or corrupt!"
+            exit 1
+          fi
+
+          tar -tzf build.tar.gz || (echo "Tar file is corrupt!"; exit 1)
+
           echo "Download complete!"
 
       - name: Extract Build Artifacts
         run: |
           set -e
-          if [ -s build.tar.gz ]; then
-            echo "Extracting build.tar.gz..."
-            tar -xzf build.tar.gz || (echo "Extraction failed!"; exit 1)
+          echo "Extracting build.tar.gz..."
+          
+          if tar -tzf build.tar.gz >/dev/null 2>&1; then
+            tar -xzf build.tar.gz
+            echo "Extraction complete!"
           else
-            echo "Error: build.tar.gz is empty or corrupt!"
+            echo "Error: build.tar.gz is corrupt or not a tar archive!"
             exit 1
           fi
 
