@@ -61,4 +61,3 @@ jobs:
       - name: Set Public Permissions (Optional)
         run: |
           gsutil iam ch allUsers:objectViewer gs://${{ secrets.GCS_BUCKET_NAME }}
-.
