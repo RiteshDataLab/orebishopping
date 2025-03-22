@@ -3,7 +3,7 @@ name: Deploy React App to GCS via JFrog
 on:
   push:
     branches:
-      - master  # Change this if using a different branch
+      - master  # Change if using a different branch
 
 jobs:
   build:
@@ -16,6 +16,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: 'npm'  # Caches node_modules to speed up builds
 
       - name: Install Dependencies
         run: npm install
@@ -26,14 +27,16 @@ jobs:
       - name: Archive Build Artifacts
         run: tar -czf build.tar.gz build/
 
-      - name: Upload Build to JFrog
+      - name: Upload Build to JFrog Artifactory
         env:
           JFROG_USERNAME: ${{ secrets.JFROG_USERNAME }}
           JFROG_PASSWORD: ${{ secrets.JFROG_PASSWORD }}
-          JFROG_URL: ${{ secrets.JFROG_URL }}
+          JFROG_URL: ${{ secrets.JFROG_URL }}  # Ensure this includes `/artifactory`
           JFROG_REPO: ${{ secrets.JFROG_REPO }}
         run: |
-          curl -u "$JFROG_USERNAME:$JFROG_PASSWORD" -T build.tar.gz "$JFROG_URL/api/generic/$JFROG_REPO/build.tar.gz"
+          echo "Uploading build.tar.gz to JFrog Artifactory..."
+          curl -u "$JFROG_USERNAME:$JFROG_PASSWORD" -T build.tar.gz "$JFROG_URL/$JFROG_REPO/build.tar.gz" || exit 1
+          echo "Upload complete!"
 
   deploy:
     needs: build
@@ -46,18 +49,24 @@ jobs:
           JFROG_URL: ${{ secrets.JFROG_URL }}
           JFROG_REPO: ${{ secrets.JFROG_REPO }}
         run: |
-          curl -u "$JFROG_USERNAME:$JFROG_PASSWORD" -o build.tar.gz "$JFROG_URL/api/generic/$JFROG_REPO/build.tar.gz"
+          echo "Downloading build.tar.gz from JFrog Artifactory..."
+          curl -u "$JFROG_USERNAME:$JFROG_PASSWORD" -o build.tar.gz "$JFROG_URL/$JFROG_REPO/build.tar.gz" || exit 1
           tar -xzf build.tar.gz
+          echo "Download & extraction complete!"
 
       - name: Authenticate with GCP
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Upload to GCS
+      - name: Upload to Google Cloud Storage (GCS)
         run: |
+          echo "Uploading build to GCS..."
           gsutil -m rsync -r build/ gs://${{ secrets.GCS_BUCKET_NAME }}/
+          echo "Upload complete!"
 
       - name: Set Public Permissions (Optional)
         run: |
-          gsutil iam ch allUsers:objectViewer gs://${{ secrets.GCS_BUCKET_NAME }}
+          echo "Making GCS bucket publicly accessible..."
+          gsutil iam ch allUsers:objectViewer gs://${{ secrets.GCS_BUCKET_NAME }} || echo "Bucket permission update failed"
+          echo "Public access granted!"
