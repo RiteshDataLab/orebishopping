@@ -36,25 +36,22 @@ jobs:
       # ✅ Install SonarQube Scanner (Fixed)
       - name: Install SonarQube Scanner
         run: |
-          echo "🔍 Fetching latest SonarQube Scanner version..."
+          echo "🔍 Fetching SonarQube Scanner..."
           
-          # Get latest SonarQube version dynamically
-          SONAR_VERSION=$(curl -s https://api.github.com/repos/SonarSource/sonar-scanner-cli/releases/latest | grep -o '"tag_name": "[^"]*' | awk -F': "' '{print $2}')
-          
-          if [ -z "$SONAR_VERSION" ]; then
-            echo "❌ ERROR: Failed to fetch latest SonarQube version!"
-            exit 1
-          fi
-          
-          echo "✅ Latest SonarQube Scanner Version: $SONAR_VERSION"
-          
-          # Download and extract SonarQube Scanner
-          curl -sSLo sonarqube-scanner.zip "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-$SONAR_VERSION-linux.zip"
-          
-          unzip sonarqube-scanner.zip
+          # ✅ Manually specify a working SonarQube Scanner version
+          SONAR_VERSION="4.8.0.2856"
+          echo "Using SonarQube Scanner Version: $SONAR_VERSION"
+
+          # ✅ Download SonarQube Scanner from the official site
+          curl -sSLo sonar-scanner.zip "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-$SONAR_VERSION-linux.zip"
+
+          # ✅ Verify the file before extraction
+          ls -lh sonar-scanner.zip
+          file sonar-scanner.zip
+          unzip -q sonar-scanner.zip
           mv sonar-scanner-$SONAR_VERSION-linux /opt/sonar-scanner
-          
-          # Verify installation
+
+          # ✅ Verify installation
           /opt/sonar-scanner/bin/sonar-scanner --version
 
       # ✅ Run SonarQube Analysis
