@@ -21,13 +21,17 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      # ✅ Install Snyk CLI (Fix for 'command not found' issue)
+      - name: Install Snyk CLI
+        run: npm install -g snyk  # This installs Snyk globally
+
       # ✅ Authenticate with Snyk
       - name: Authenticate with Snyk
         run: snyk auth ${{ secrets.SNYK_TOKEN }}
 
       # ✅ Run Snyk Security Scan
       - name: Run Snyk Security Scan
-        run: snyk test || true  # Prevent job from failing due to minor issues
+        run: snyk test || true  # Prevent failure due to minor issues
 
       # ✅ Install SonarQube Scanner
       - name: Install SonarQube Scanner
@@ -51,8 +55,7 @@ jobs:
 
       # ✅ Archive Build Artifacts
       - name: Archive Build Artifacts
-        run: |
-          tar -czf build.tar.gz build/
+        run: tar -czf build.tar.gz build/
 
       # ✅ Authenticate with GCP
       - name: Authenticate with GCP
@@ -62,21 +65,4 @@ jobs:
 
       # ✅ Upload to Google Cloud Storage (GCS)
       - name: Upload to GCS
-        run: |
-          gsutil -m cp -r build/* gs://my-react-app-bucket/
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download Build from GCS
-        run: gsutil -m cp -r gs://my-react-app-bucket/build.tar.gz .
-
-      - name: Extract Build Files
-        run: |
-          tar -xzf build.tar.gz
-          ls -lah build/
-
-      - name: Deploy to GCS
-        run: |
-          gsutil -m cp -r build/* gs://my-react-app-bucket/
+        run: gsutil -m cp -r build/* gs://my-react-app-bucket/
