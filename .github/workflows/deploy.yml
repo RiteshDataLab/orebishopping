@@ -33,17 +33,17 @@ jobs:
       - name: Run Snyk Security Scan
         run: snyk test || true  # Prevent pipeline failure due to minor issues
 
-      # ✅ Install Latest SonarQube Scanner (7.1.0.4889)
+      # ✅ Install SonarQube Scanner (Version 7.0.0.4796)
       - name: Install SonarQube Scanner
         run: |
           echo "🔍 Fetching SonarQube Scanner..."
 
-          # ✅ Use the latest version
-          SONAR_VERSION="7.1.0.4889"
+          # ✅ Use the working, stable version
+          SONAR_VERSION="7.0.0.4796"
           echo "Using SonarQube Scanner Version: $SONAR_VERSION"
 
           # ✅ Correct download URL
-          DOWNLOAD_URL="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-$SONAR_VERSION-linux.zip"
+          DOWNLOAD_URL="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_VERSION-linux-x64.zip"
 
           # ✅ Download SonarQube Scanner
           echo "Downloading from $DOWNLOAD_URL..."
@@ -57,7 +57,7 @@ jobs:
 
           # ✅ Extract SonarQube Scanner
           unzip -q sonar-scanner.zip
-          sudo mv sonar-scanner-$SONAR_VERSION-linux /opt/sonar-scanner
+          sudo mv sonar-scanner-cli-$SONAR_VERSION-linux-x64 /opt/sonar-scanner
 
           # ✅ Add SonarQube Scanner to PATH
           echo 'export PATH="/opt/sonar-scanner/bin:$PATH"' >> ~/.bashrc
