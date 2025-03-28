@@ -21,7 +21,7 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      # ✅ Install Snyk CLI (Fixed)
+      # ✅ Install Snyk CLI
       - name: Install Snyk CLI
         run: npm install -g snyk
 
@@ -33,21 +33,33 @@ jobs:
       - name: Run Snyk Security Scan
         run: snyk test || true  # Prevent failure due to minor issues
 
-      # ✅ Install SonarQube Scanner (Fixed)
+      # ✅ Install SonarQube Scanner (FIXED)
       - name: Install SonarQube Scanner
         run: |
           echo "🔍 Fetching SonarQube Scanner..."
           
-          # ✅ Manually specify a working SonarQube Scanner version
-          SONAR_VERSION="4.8.0.2856"
+          # ✅ Use a working, stable version of SonarQube Scanner
+          SONAR_VERSION="4.6.2.2472"
           echo "Using SonarQube Scanner Version: $SONAR_VERSION"
 
-          # ✅ Download SonarQube Scanner from the official site
-          curl -sSLo sonar-scanner.zip "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-$SONAR_VERSION-linux.zip"
+          # ✅ Correct download URL
+          DOWNLOAD_URL="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-$SONAR_VERSION-linux.zip"
+
+          # ✅ Download SonarQube Scanner
+          echo "Downloading from $DOWNLOAD_URL..."
+          curl -fSL -o sonar-scanner.zip "$DOWNLOAD_URL"
+
+          # ✅ Check if download was successful
+          if [ ! -s sonar-scanner.zip ]; then
+            echo "❌ ERROR: Download failed, sonar-scanner.zip is empty!"
+            exit 1
+          fi
 
           # ✅ Verify the file before extraction
           ls -lh sonar-scanner.zip
           file sonar-scanner.zip
+
+          # ✅ Extract SonarQube Scanner
           unzip -q sonar-scanner.zip
           mv sonar-scanner-$SONAR_VERSION-linux /opt/sonar-scanner
 
