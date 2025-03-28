@@ -21,7 +21,7 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      # ✅ Install Snyk CLI
+      # ✅ Install Snyk CLI (Fixed)
       - name: Install Snyk CLI
         run: npm install -g snyk
 
@@ -31,9 +31,9 @@ jobs:
 
       # ✅ Run Snyk Security Scan
       - name: Run Snyk Security Scan
-        run: snyk test || true  # Prevent pipeline failure due to minor issues
+        run: snyk test || true  # Prevent failure due to minor issues
 
-      # ✅ Install SonarQube Scanner (Version 7.0.0.4796)
+      # ✅ Install SonarQube Scanner (Fixed)
       - name: Install SonarQube Scanner
         run: |
           echo "🔍 Fetching SonarQube Scanner..."
@@ -55,15 +55,28 @@ jobs:
             exit 1
           fi
 
+          # ✅ Verify ZIP file before extraction
+          echo "📂 Checking downloaded file..."
+          ls -lh sonar-scanner.zip
+          file sonar-scanner.zip
+
           # ✅ Extract SonarQube Scanner
-          unzip -q sonar-scanner.zip
-          sudo mv sonar-scanner-cli-$SONAR_VERSION-linux-x64 /opt/sonar-scanner
+          echo "📂 Extracting SonarQube Scanner..."
+          unzip sonar-scanner.zip
+
+          # ✅ Verify extracted folder
+          echo "📂 Listing extracted files..."
+          ls -l
+
+          # ✅ Move extracted folder to `/opt/sonar-scanner`
+          sudo mv sonar-scanner-* /opt/sonar-scanner
 
           # ✅ Add SonarQube Scanner to PATH
-          echo 'export PATH="/opt/sonar-scanner/bin:$PATH"' >> ~/.bashrc
-          source ~/.bashrc
+          echo 'export PATH="/opt/sonar-scanner/bin:$PATH"' | sudo tee -a /etc/profile
+          source /etc/profile
 
           # ✅ Verify installation
+          echo "✅ Verifying SonarQube Scanner installation..."
           /opt/sonar-scanner/bin/sonar-scanner --version
 
       # ✅ Run SonarQube Analysis
