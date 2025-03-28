@@ -21,9 +21,9 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      # ✅ Install Snyk CLI (Fix for 'command not found' issue)
+      # ✅ Install Snyk CLI (Fixed)
       - name: Install Snyk CLI
-        run: npm install -g snyk  # This installs Snyk globally
+        run: npm install -g snyk
 
       # ✅ Authenticate with Snyk
       - name: Authenticate with Snyk
@@ -33,12 +33,29 @@ jobs:
       - name: Run Snyk Security Scan
         run: snyk test || true  # Prevent failure due to minor issues
 
-      # ✅ Install SonarQube Scanner
+      # ✅ Install SonarQube Scanner (Fixed)
       - name: Install SonarQube Scanner
         run: |
-          curl -sSLo sonarqube-scanner.zip https://github.com/SonarSource/sonar-scanner-cli/releases/download/4.6.2.2472/sonar-scanner-cli-4.6.2.2472-linux.zip
+          echo "🔍 Fetching latest SonarQube Scanner version..."
+          
+          # Get latest SonarQube version dynamically
+          SONAR_VERSION=$(curl -s https://api.github.com/repos/SonarSource/sonar-scanner-cli/releases/latest | grep -o '"tag_name": "[^"]*' | awk -F': "' '{print $2}')
+          
+          if [ -z "$SONAR_VERSION" ]; then
+            echo "❌ ERROR: Failed to fetch latest SonarQube version!"
+            exit 1
+          fi
+          
+          echo "✅ Latest SonarQube Scanner Version: $SONAR_VERSION"
+          
+          # Download and extract SonarQube Scanner
+          curl -sSLo sonarqube-scanner.zip "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-$SONAR_VERSION-linux.zip"
+          
           unzip sonarqube-scanner.zip
-          mv sonar-scanner-4.6.2.2472-linux /opt/sonar-scanner
+          mv sonar-scanner-$SONAR_VERSION-linux /opt/sonar-scanner
+          
+          # Verify installation
+          /opt/sonar-scanner/bin/sonar-scanner --version
 
       # ✅ Run SonarQube Analysis
       - name: Run SonarQube Analysis
@@ -46,7 +63,7 @@ jobs:
           /opt/sonar-scanner/bin/sonar-scanner \
           -Dsonar.projectKey=my-react-app \
           -Dsonar.sources=src \
-          -Dsonar.host.url=http://<your-gcp-instance-ip>:9000 \
+          -Dsonar.host.url=http://35.226.115.150:9000 \
           -Dsonar.login=${{ secrets.SONARQUBE_TOKEN }}
 
       # ✅ Build React App
