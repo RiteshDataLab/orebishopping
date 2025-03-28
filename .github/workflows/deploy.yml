@@ -104,4 +104,4 @@ jobs:
 
       # ✅ Upload to Google Cloud Storage (GCS)
       - name: Upload to GCS
-        run: gsutil -m cp -r build/* gs://my-react-app-bucket/
+        run: gsutil -m cp -r build/* gs://my-react-app-bucket-jfrog/
